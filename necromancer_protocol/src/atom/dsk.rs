@@ -1,4 +1,4 @@
-//! # Dsk; 6/11 atoms
+//! # Dsk; 9/11 atoms
 //!
 //! This module implements a minimal subset of downstream keyer (DSK) atoms
 //! needed to control on-air state, sources, rate and auto–transition.
@@ -10,8 +10,6 @@
 //! ------ | --------- | ------
 //! `CDsG` | `ChangeDskShapedClipGain` | 0x14
 //! `CDsM` | `ChangeDskMask` | 0x14
-//! `DskP` | `DskConfigParameters` | 0x1c
-//! `DskS` | `DskCurrentState` | 0x10
 
 use crate::structs::VideoSource;
 use binrw::binrw;

@@ -15,6 +15,18 @@ struct CliParser {
     /// Automatically reconnect on connection loss.
     #[clap(short, long)]
     pub reconnect: bool,
+
+    /// Downstream keyer index to control.
+    #[clap(long, default_value_t = 0)]
+    pub dsk: u8,
+
+    /// If set, turns the downstream keyer on-air on startup.
+    #[clap(long)]
+    pub dsk_on_air: bool,
+
+    /// If set, triggers a downstream keyer auto transition on startup.
+    #[clap(long)]
+    pub dsk_auto: bool,
 }
 
 #[tokio::main]
@@ -53,6 +65,14 @@ async fn main() -> Result<()> {
         "Fairlight EQ frequencies: {:?}",
         state.fairlight_audio_frequency_ranges
     );
+
+    if opts.dsk_on_air {
+        atem.set_dsk_on_air(opts.dsk, true).await?;
+    }
+
+    if opts.dsk_auto {
+        atem.dsk_auto(opts.dsk).await?;
+    }
 
     loop {
         let Ok((state, update)) = atem.state_update_events().recv().await else {

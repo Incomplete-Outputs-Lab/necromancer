@@ -2,7 +2,8 @@ use crate::{
     error::Error,
     protocol::{
         atom::{
-            Atom, Auto, Cut, CutToBlack, FadeToBlackAuto, FileTransferChunkParams, FileType,
+            Atom, Auto, ChangeDskCut, ChangeDskFill, ChangeDskLive, ChangeDskRate, ChangeDskTie,
+            Cut, CutToBlack, DoDskAuto, FadeToBlackAuto, FileTransferChunkParams, FileType,
             FinishFileDownload, MediaPlayerSourceID, MediaPoolLock, Payload,
             SetColourGeneratorParams, SetMediaPlayerSource, SetPreviewInput, SetProgramInput,
             SetupFileDownload, SetupFileUpload, TimecodeRequest, TransferChunk, CAPTURE_STILL,
@@ -361,6 +362,56 @@ impl AtemController {
 
     pub async fn toggle_auto_black(&self, me: u8) -> Result<(), Error> {
         let cmd = Atom::new(FadeToBlackAuto { me });
+        self.send(vec![cmd]).await
+    }
+
+    /// Triggers an auto transition on a downstream keyer.
+    pub async fn dsk_auto(&self, key: u8) -> Result<(), Error> {
+        let cmd = Atom::new(DoDskAuto { key });
+        self.send(vec![cmd]).await
+    }
+
+    /// Sets the on-air state for a downstream keyer.
+    pub async fn set_dsk_on_air(&self, key: u8, on_air: bool) -> Result<(), Error> {
+        let cmd = Atom::new(ChangeDskLive { key, on_air });
+        self.send(vec![cmd]).await
+    }
+
+    /// Sets the tie state for a downstream keyer.
+    pub async fn set_dsk_tie(&self, key: u8, tie: bool) -> Result<(), Error> {
+        let cmd = Atom::new(ChangeDskTie { key, tie });
+        self.send(vec![cmd]).await
+    }
+
+    /// Sets the cut source for a downstream keyer.
+    pub async fn set_dsk_cut_source(
+        &self,
+        key: u8,
+        source: VideoSource,
+    ) -> Result<(), Error> {
+        let cmd = Atom::new(ChangeDskCut {
+            key,
+            cut_source: source,
+        });
+        self.send(vec![cmd]).await
+    }
+
+    /// Sets the fill source for a downstream keyer.
+    pub async fn set_dsk_fill_source(
+        &self,
+        key: u8,
+        source: VideoSource,
+    ) -> Result<(), Error> {
+        let cmd = Atom::new(ChangeDskFill {
+            key,
+            fill_source: source,
+        });
+        self.send(vec![cmd]).await
+    }
+
+    /// Sets the auto transition rate for a downstream keyer.
+    pub async fn set_dsk_rate(&self, key: u8, rate: u8) -> Result<(), Error> {
+        let cmd = Atom::new(ChangeDskRate { key, rate });
         self.send(vec![cmd]).await
     }
 

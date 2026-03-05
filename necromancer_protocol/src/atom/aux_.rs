@@ -1,14 +1,4 @@
-//! # Aux; 2/2 atoms
-//!
 //! Aux (auxiliary) video outputs.
-//!
-//! ## Implemented atoms (2)
-//!
-//! FourCC | Atom name | Length
-//! ------ | --------- | ------
-//! `AuxS` | `AuxSource` | 0xc
-//! `CAuS` | `ChangeAuxSource` | 0xc
-//!
 
 use crate::structs::VideoSource;
 use binrw::binrw;

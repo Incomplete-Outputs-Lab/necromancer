@@ -92,6 +92,7 @@ pub use self::{
     },
     dsk::{
         ChangeDskCut, ChangeDskFill, ChangeDskLive, ChangeDskRate, ChangeDskTie, DoDskAuto,
+        DskConfigParameters, DskCurrentState, DskInputSelection,
     },
     ftb::{CutToBlack, FadeToBlackAuto, FadeToBlackParams, FadeToBlackStatus, SetFadeToBlackParams},
     initialisation::InitialisationComplete,
@@ -266,6 +267,9 @@ atom_payloads!(
     b"DCut" => Cut,
     b"FASP" => FairlightAudioMixerInputSourceProperties,
     b"DDsA" => DoDskAuto,
+    b"DskB" => DskInputSelection,
+    b"DskP" => DskConfigParameters,
+    b"DskS" => DskCurrentState,
     b"FCut" => CutToBlack,
     b"FMTl" => FairlightAudioMixerTally,
     b"FtbA" => FadeToBlackAuto,

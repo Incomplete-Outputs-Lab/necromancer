@@ -66,6 +66,16 @@ async fn main() -> Result<()> {
         state.fairlight_audio_frequency_ranges
     );
 
+    if !state.dsk_sources.is_empty() {
+        info!("Initial DSK sources: {:?}", state.dsk_sources);
+    }
+    if !state.dsk_properties.is_empty() {
+        info!("Initial DSK properties: {:?}", state.dsk_properties);
+    }
+    if !state.dsk_state.is_empty() {
+        info!("Initial DSK state: {:?}", state.dsk_state);
+    }
+
     if opts.dsk_on_air {
         atem.set_dsk_on_air(opts.dsk, true).await?;
     }
@@ -107,6 +117,18 @@ async fn main() -> Result<()> {
                 "Fairlight input source properties: {:?}",
                 state.fairlight_audio_mixer_input_props
             );
+        }
+
+        if update.contains(StateUpdate::DSK_SOURCES) {
+            info!("DSK sources: {:?}", state.dsk_sources);
+        }
+
+        if update.contains(StateUpdate::DSK_PROPERTIES) {
+            info!("DSK properties: {:?}", state.dsk_properties);
+        }
+
+        if update.contains(StateUpdate::DSK_STATE) {
+            info!("DSK state: {:?}", state.dsk_state);
         }
     }
 }

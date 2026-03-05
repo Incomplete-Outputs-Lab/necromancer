@@ -1,10 +1,10 @@
 use crate::{
     protocol::{
         atom::{
-            Atom, ColourGeneratorParams, FadeToBlackStatus,
-            FairlightAudioMixerInputSourceProperties, InputProperties, MediaPlayerCapabilities,
-            MediaPlayerFrameDescription, MediaPlayerSourceID, MixEffectBlockCapabilities, Payload,
-            ProductName, Topology, TransitionPosition, Version,
+            Atom, ColourGeneratorParams, DskConfigParameters, DskCurrentState, DskInputSelection,
+            FadeToBlackStatus, FairlightAudioMixerInputSourceProperties, InputProperties,
+            MediaPlayerCapabilities, MediaPlayerFrameDescription, MediaPlayerSourceID,
+            MixEffectBlockCapabilities, Payload, ProductName, Topology, TransitionPosition, Version,
         },
         structs::{DVETransitionStyle, EqualiserRange, TallyFlags, VideoMode, VideoSource},
     },
@@ -14,6 +14,32 @@ use std::{
     collections::{BTreeMap, HashMap, HashSet},
     ops::RangeInclusive,
 };
+
+/// Configuration properties for a downstream keyer.
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
+pub struct DskProperties {
+    pub tie: bool,
+    pub rate: u8,
+    pub pre_multiply: bool,
+    pub clip: i16,
+    pub gain: i16,
+    pub invert: bool,
+    pub mask_enabled: bool,
+    pub mask_top: i16,
+    pub mask_bottom: i16,
+    pub mask_left: i16,
+    pub mask_right: i16,
+}
+
+/// Runtime state for a downstream keyer.
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
+pub struct DskRuntimeState {
+    pub on_air: bool,
+    pub in_transition: bool,
+    pub is_auto: bool,
+    pub is_towards_on_air: bool,
+    pub remaining_frames: u8,
+}
 
 bitflags! {
     #[derive(Debug, Default, PartialEq, Eq, Clone, Copy)]
@@ -42,6 +68,9 @@ bitflags! {
         const FAIRLIGHT_INPUT_SOURCE_PROPS   = 1 << 19;
         const FAIRLIGHT_FREQUENCY_RANGES     = 1 << 20;
         const DVE_CAPABILITIES               = 1 << 21;
+        const DSK_SOURCES                    = 1 << 22;
+        const DSK_PROPERTIES                 = 1 << 23;
+        const DSK_STATE                      = 1 << 24;
 
         const PREVIEW_OR_PROGRAM_SOURCE = Self::PREVIEW_SOURCE.bits() | Self::PROGRAM_SOURCE.bits();
         const UNSUPPORTED_COMMAND            = 1 << 31;
@@ -133,6 +162,15 @@ pub struct AtemState {
     pub dve_can_rotate: bool,
     pub dve_can_scale_up: bool,
     pub dve_supported_transition_styles: HashSet<DVETransitionStyle>,
+
+    /// Downstream keyer sources (fill, cut) by key index.
+    pub dsk_sources: HashMap<u8, (VideoSource, VideoSource)>,
+
+    /// Downstream keyer configuration properties.
+    pub dsk_properties: HashMap<u8, DskProperties>,
+
+    /// Downstream keyer runtime state (on-air, transition status, etc).
+    pub dsk_state: HashMap<u8, DskRuntimeState>,
 }
 
 impl AtemState {
@@ -364,6 +402,45 @@ impl AtemState {
                         HashSet::from_iter(dve.supported_dve_transition_styles.iter().copied());
 
                     updated_fields |= StateUpdate::DVE_CAPABILITIES;
+                }
+
+                Payload::DskInputSelection(sel) => {
+                    debug!(?sel, "updated DSK input selection");
+                    self.dsk_sources
+                        .insert(sel.key, (sel.fill_source, sel.cut_source));
+                    updated_fields |= StateUpdate::DSK_SOURCES;
+                }
+
+                Payload::DskConfigParameters(cfg) => {
+                    debug!(?cfg, "updated DSK config parameters");
+                    let props = DskProperties {
+                        tie: cfg.tie,
+                        rate: cfg.rate,
+                        pre_multiply: cfg.pre_multiply,
+                        clip: cfg.clip,
+                        gain: cfg.gain,
+                        invert: cfg.invert,
+                        mask_enabled: cfg.mask_enabled,
+                        mask_top: cfg.mask_top,
+                        mask_bottom: cfg.mask_bottom,
+                        mask_left: cfg.mask_left,
+                        mask_right: cfg.mask_right,
+                    };
+                    self.dsk_properties.insert(cfg.key, props);
+                    updated_fields |= StateUpdate::DSK_PROPERTIES;
+                }
+
+                Payload::DskCurrentState(st) => {
+                    debug!(?st, "updated DSK state");
+                    let runtime = DskRuntimeState {
+                        on_air: st.on_air,
+                        in_transition: st.in_transition,
+                        is_auto: st.is_auto,
+                        is_towards_on_air: st.is_towards_on_air,
+                        remaining_frames: st.remaining_frames,
+                    };
+                    self.dsk_state.insert(st.key, runtime);
+                    updated_fields |= StateUpdate::DSK_STATE;
                 }
 
                 _ => (),

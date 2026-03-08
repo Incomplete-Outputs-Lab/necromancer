@@ -3,15 +3,15 @@ use crate::{
     protocol::{
         atom::{
             Atom, Auto, ChangeAuxSource, ChangeDskCut, ChangeDskFill, ChangeDskLive, ChangeDskRate,
-            ChangeDskTie, Cut, CutToBlack, DoDskAuto, FadeToBlackAuto, FileTransferChunkParams,
-            FileType, FinishFileDownload, MediaPlayerSourceID, MediaPoolLock, Payload,
-            SetColourGeneratorParams, SetMediaPlayerSource, SetPreviewInput, SetProgramInput,
-            SetupFileDownload, SetupFileUpload, TimecodeRequest, TransferChunk, CAPTURE_STILL,
-            CLEAR_MEDIA_POOL, CLEAR_STARTUP_SETTINGS, RESTORE_STARTUP_SETTINGS,
+            ChangeDskTie, ChangeTransitionNext, Cut, CutToBlack, DoDskAuto, FadeToBlackAuto,
+            FileTransferChunkParams, FileType, FinishFileDownload, MediaPlayerSourceID,
+            MediaPoolLock, Payload, SetColourGeneratorParams, SetMediaPlayerSource, SetPreviewInput,
+            SetProgramInput, SetupFileDownload, SetupFileUpload, TimecodeRequest, TransferChunk,
+            CAPTURE_STILL, CLEAR_MEDIA_POOL, CLEAR_STARTUP_SETTINGS, RESTORE_STARTUP_SETTINGS,
             RTMP_DURATION_REQUEST, SAVE_STARTUP_SETTINGS,
         },
         rle::RLE_MARKER,
-        structs::VideoSource,
+        structs::{VideoSource, TransitionType},
         AtemControl, AtemPacket, AtemPacketFlags,
     },
     rle::rle_md5_size,
@@ -352,6 +352,15 @@ impl AtemController {
     /// with the currently-selected transition.
     pub async fn auto(&self, me: u8) -> Result<(), Error> {
         let cmd = Atom::new(Auto { me });
+        self.send(vec![cmd]).await
+    }
+
+    /// Sets the type of transition used for the next auto transition on an M/E.
+    pub async fn set_next_transition(&self, me: u8, next_transition: TransitionType) -> Result<(), Error> {
+        let cmd = Atom::new(ChangeTransitionNext {
+            me,
+            next_transition,
+        });
         self.send(vec![cmd]).await
     }
 

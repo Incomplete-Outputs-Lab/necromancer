@@ -10,7 +10,7 @@
 //! `CTPr` | `ChangeTransitionPreviewTrans` | 0xc
 //! `CTPs` | `ChangeTransitionPosition` | 0xc
 //! `CTSt` | `ChangeTransitionStingerProperties` | 0x1c
-//! `CTTp` | `ChangeTransitionNext` | 0xc
+//! `CTTp` | `ChangeTransitionNext` | 0xc  ← implemented
 //! `CTWp` | `ChangeTransitionWipeProperties` | 0x1c
 //! `DAu2` | `DoTransitionAuto_2` | 0xc
 //! `STWV` | `SetTransitionWipeVelocity` | 0x18
@@ -22,7 +22,7 @@
 //! `TStP` | `TransitionStingerProperties` | 0x1c
 //! `TWpP` | `TransitionWipeProperties` | 0x1c
 
-use crate::structs::DVETransitionStyle;
+use crate::structs::{DVETransitionStyle, TransitionType};
 use binrw::binrw;
 
 /// `_DVE`: Digital video effects capabilities (`CapabilitiesDVE`)
@@ -83,6 +83,26 @@ pub struct Cut {
 pub struct Auto {
     #[brw(pad_size_to = 4)]
     pub me: u8,
+}
+
+/// `CTTp`: change next transition (`ChangeTransitionNext`)
+///
+/// Sets the type of transition used for the next auto transition on an M/E.
+///
+/// ## Packet format
+///
+/// * `u8`: ME index
+/// * `u8`: next transition style (TransitionType: Mix=0, Dip=1, Wipe=2, DVE=3, Sting=4)
+/// * 2 bytes padding
+#[binrw]
+#[brw(big)]
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct ChangeTransitionNext {
+    pub me: u8,
+    #[br(map = |v: u8| TransitionType::try_from(v).unwrap_or(TransitionType::Mix))]
+    #[bw(map = |v: &TransitionType| *v as u8)]
+    #[brw(pad_after = 2)]
+    pub next_transition: TransitionType,
 }
 
 /// `TrPs`: transition position (`TransitionCurrentPosition`)

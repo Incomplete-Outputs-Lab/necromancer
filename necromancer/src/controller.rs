@@ -2,9 +2,9 @@ use crate::{
     error::Error,
     protocol::{
         atom::{
-            Atom, Auto, ChangeDskCut, ChangeDskFill, ChangeDskLive, ChangeDskRate, ChangeDskTie,
-            Cut, CutToBlack, DoDskAuto, FadeToBlackAuto, FileTransferChunkParams, FileType,
-            FinishFileDownload, MediaPlayerSourceID, MediaPoolLock, Payload,
+            Atom, Auto, ChangeAuxSource, ChangeDskCut, ChangeDskFill, ChangeDskLive, ChangeDskRate,
+            ChangeDskTie, Cut, CutToBlack, DoDskAuto, FadeToBlackAuto, FileTransferChunkParams,
+            FileType, FinishFileDownload, MediaPlayerSourceID, MediaPoolLock, Payload,
             SetColourGeneratorParams, SetMediaPlayerSource, SetPreviewInput, SetProgramInput,
             SetupFileDownload, SetupFileUpload, TimecodeRequest, TransferChunk, CAPTURE_STILL,
             CLEAR_MEDIA_POOL, CLEAR_STARTUP_SETTINGS, RESTORE_STARTUP_SETTINGS,
@@ -352,6 +352,22 @@ impl AtemController {
     /// with the currently-selected transition.
     pub async fn auto(&self, me: u8) -> Result<(), Error> {
         let cmd = Atom::new(Auto { me });
+        self.send(vec![cmd]).await
+    }
+
+    /// Sets the current source for a given AUX bus.
+    pub async fn set_aux_source(&self, aux_bus: u8, video_source: VideoSource) -> Result<(), Error> {
+        let state = self.get_state().await;
+        if aux_bus >= state.topology.auxs {
+            error!(
+                "aux bus #{aux_bus} does not exist, switcher has {} aux bus(es)",
+                state.topology.auxs
+            );
+            return Err(Error::ParameterOutOfRange);
+        }
+        drop(state);
+
+        let cmd = Atom::new(ChangeAuxSource { aux_bus, video_source });
         self.send(vec![cmd]).await
     }
 

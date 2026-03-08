@@ -57,6 +57,12 @@ async fn main() -> Result<()> {
 
         info!("ME {me}: Program {pgm:?}, Preview {pre:?}");
     }
+    if state.topology.auxs > 0 {
+        for aux in 0..state.topology.auxs {
+            let src = state.get_aux_source(aux).unwrap_or_default();
+            info!("AUX {aux}: {src:?}");
+        }
+    }
     info!(
         "Supported DVE transition styles (scale={:?}, rotate={:?}): {:?}",
         state.dve_can_scale_up, state.dve_can_rotate, state.dve_supported_transition_styles,
@@ -95,6 +101,10 @@ async fn main() -> Result<()> {
 
         if update.contains(StateUpdate::PREVIEW_SOURCE) {
             info!("Preview sources: {:?}", state.get_preview_sources());
+        }
+
+        if update.contains(StateUpdate::AUX_SOURCE) {
+            info!("AUX sources: {:?}", state.get_aux_sources());
         }
 
         if update.contains(StateUpdate::FADE_TO_BLACK_RATE) {

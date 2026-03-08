@@ -68,9 +68,10 @@ bitflags! {
         const FAIRLIGHT_INPUT_SOURCE_PROPS   = 1 << 19;
         const FAIRLIGHT_FREQUENCY_RANGES     = 1 << 20;
         const DVE_CAPABILITIES               = 1 << 21;
-        const DSK_SOURCES                    = 1 << 22;
-        const DSK_PROPERTIES                 = 1 << 23;
-        const DSK_STATE                      = 1 << 24;
+        const AUX_SOURCE                     = 1 << 22;
+        const DSK_SOURCES                    = 1 << 23;
+        const DSK_PROPERTIES                 = 1 << 24;
+        const DSK_STATE                      = 1 << 25;
 
         const PREVIEW_OR_PROGRAM_SOURCE = Self::PREVIEW_SOURCE.bits() | Self::PROGRAM_SOURCE.bits();
         const UNSUPPORTED_COMMAND            = 1 << 31;
@@ -104,6 +105,8 @@ pub struct AtemState {
     me_capabilities: [MixEffectBlockCapabilities; MAX_MES],
     program_source: [VideoSource; MAX_MES],
     preview_source: [VideoSource; MAX_MES],
+    /// Current source for each AUX bus.
+    pub aux_sources: Vec<VideoSource>,
     /// Transition position for each ME.
     pub transition_position: HashMap<u8, TransitionPosition>,
     /// Current tally state for each source.
@@ -235,6 +238,10 @@ impl AtemState {
                             self.topology.media_players,
                         );
                     }
+                    if self.aux_sources.len() != usize::from(self.topology.auxs) {
+                        self.aux_sources
+                            .resize(usize::from(self.topology.auxs), VideoSource::default());
+                    }
                     updated_fields |= StateUpdate::TOPOLOGY;
                 }
 
@@ -350,6 +357,20 @@ impl AtemState {
                     }
                     self.media_player_sources[usize::from(mpce.id)] = Some(mpce.source);
                     updated_fields |= StateUpdate::MEDIA_PLAYER_SOURCE;
+                }
+
+                Payload::AuxSource(aux) => {
+                    debug!(?aux, "updated aux source");
+                    let idx = usize::from(aux.aux_bus);
+                    if idx >= usize::from(self.topology.auxs) {
+                        continue;
+                    }
+                    if self.aux_sources.len() <= idx {
+                        self.aux_sources
+                            .resize(usize::from(self.topology.auxs), VideoSource::default());
+                    }
+                    self.aux_sources[idx] = aux.video_source;
+                    updated_fields |= StateUpdate::AUX_SOURCE;
                 }
 
                 Payload::ColourGeneratorParams(colv) => {
@@ -500,6 +521,22 @@ impl AtemState {
         &self.preview_source[0..self.topology.mes as usize]
     }
 
+    /// Get the current source for a given AUX bus.
+    ///
+    /// Returns `None` if the bus index is invalid for this switcher's topology.
+    pub fn get_aux_source(&self, bus: u8) -> Option<VideoSource> {
+        if bus >= self.topology.auxs {
+            return None;
+        }
+        let idx = usize::from(bus);
+        self.aux_sources.get(idx).copied()
+    }
+
+    /// Get the current sources for all AUX buses.
+    pub fn get_aux_sources(&self) -> &[VideoSource] {
+        &self.aux_sources
+    }
+
     pub const fn get_fade_to_black_status(&self, me: u8) -> Option<FadeToBlackStatus> {
         if me >= self.topology.mes {
             return None;
@@ -577,6 +614,7 @@ impl std::fmt::Debug for AtemState {
                 "preview_source",
                 &&self.preview_source[..MAX_MES.min(self.topology.mes as usize)],
             )
+            .field("aux_sources", &self.aux_sources)
             .field("transition_position", &self.transition_position)
             .field("tally_by_source", &self.tally_by_source)
             .field("supported_video_modes", &self.supported_video_modes)

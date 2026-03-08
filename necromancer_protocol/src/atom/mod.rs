@@ -82,6 +82,7 @@ use binrw::{binrw, helpers::until_eof, io::TakeSeekExt};
 use std::{fmt::Debug, io::SeekFrom};
 
 pub use self::{
+    aux::{AuxSource, ChangeAuxSource},
     camera::{CameraCommand, CameraControl},
     colour::{ColourGeneratorParams, SetColourGeneratorParams},
     fairlight::{
@@ -248,6 +249,7 @@ atom_payloads!(
     b"_ver" => Version,
     b"_VMC" => SupportedVideoModes,
     b"AMBP" => FairlightAudioMixerMasterOutEqualiserBandProperties,
+    b"AuxS" => AuxSource,
     b"Capt" => CaptureStill,
     b"CCdP" => CameraControl,
     b"CClV" => SetColourGeneratorParams,
@@ -256,6 +258,7 @@ atom_payloads!(
     b"ColV" => ColourGeneratorParams,
     b"CPgI" => SetProgramInput,
     b"CPvI" => SetPreviewInput,
+    b"CAuS" => ChangeAuxSource,
     b"CTCC" => SetTimecodeConfig,
     b"CVdM" => SetVideoMode,
     b"CDsC" => ChangeDskCut,

@@ -14,7 +14,7 @@ repository = "https://github.com/micolous/necromancer"
 keywords = ["atem", "blackmagic"]
 
 [workspace.dependencies]
-binrw = "0.15.0"
+binrw = { version = "0.15.0", default-features = false, features = ["std"] }
 bitflags = "2.4.0"
 chrono = "0.4.42"
 fixed = "1.29.0"
